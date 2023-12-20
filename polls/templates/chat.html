@@ -1,0 +1,176 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Chat</title>
+    <link href="{% static 'foras/css/new-chat.css' %}" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="chat_window">
+        <div class="top_menu">
+            <div class="title">Chat</div>
+            <div class="title-bar"> 
+                <div id="loading-spinner" class="spinner" style="display: none;">
+                    <span class="sr-only">Loading...</span>
+                    <img src="{% static 'foras/images/loading.png' %}" alt="Loading">
+                </div>
+                <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+            </div>
+        </div>
+        <ul class="messages">
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.is_user %}
+                        <li class="message right appeared">
+                            <div class="avatar">
+                                <img src="{% static 'foras/images/user.png' %}" alt="User Avatar">
+                            </div>
+                            <div class="text_wrapper">
+                                <div class="text">
+                                    <pre>{{ message.text }}</pre>
+                                </div>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li class="message left appeared">
+                            <div class="avatar">
+                                <img src="{% static 'foras/images/ai.png' %}" alt="ai">
+                            </div>
+                            <div class="text_wrapper">
+                                <div class="text">
+                                    <pre style="white-space: pre-line;">{{ message.text }}</pre>
+                                </div>
+                            </div>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+            {% endif %}
+        </ul>
+        <form id="chat-form" onsubmit="return false" method="post" class="chat-form">
+            {% csrf_token %}
+                <!-- <input type="text" id="message-input" name="message" class="message-input" -->
+                    <!-- placeholder="Type your message here..."> -->
+                <!-- <button id="submit_form" class="submit-btn">Send</button> -->
+            <div class="bottom_wrapper clearfix">
+                <div class="message_input_wrapper">
+                    <input class="message_input" placeholder="Type your message here..." />
+                </div>
+                <div class="send_message" id="submit_form">
+                    <div class="icon"></div>
+                    <div class="text">Send</div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="message_template">
+        <li class="message">
+            <div class="avatar"></div>
+            <div class="text_wrapper">
+                <div class="text"></div>
+            </div>
+        </li>
+    </div>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="{% static 'foras/js/chat.js' %}"></script>
+    <script>
+        function addUserMsg() {
+            var messageElement = '<div class="user-message">' + '<strong>You:</strong> ' + $('#message-input').val() + '</div>';
+            $('#chat-box').append(messageElement);
+            $('#message-input').val('');
+            $('#chat-box').scrollTop($('#chat-box')[0].scrollHeight);
+        }
+        (function () {
+            var Message;
+            Message = function (arg) {
+                this.text = arg.text, this.isUser = arg.isUser;
+                this.draw = function (_this) {
+                    return function () {
+                        var $message;
+                        $message = $($('.message_template').clone().html());
+                        $message.addClass(_this.isUser ? 'right' : 'left').find('.text').html("<pre>" + _this.text + "</pre>");
+                        var type = _this.isUser ? "user" : "ai";
+                        var imagePath = "/static/foras/images/" + type + ".png";  
+                        var $img = '<img src="' + imagePath + '" alt="Avatar">';
+                        $message.find('.avatar').html($img)
+                        $('.messages').append($message);
+                        return setTimeout(function () {
+                            return $message.addClass('appeared');
+                        }, 0);
+                    };
+                }(this);
+                return this;
+            };
+            $(function () {
+                var getMessageText, isUser, sendMessage, sendAjax;
+
+                sendAjax = function(text) {
+                    $.ajax({
+                        url: '{% url "chat" %}', 
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            message: text,
+                            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(data) {
+                            sendMessage(data.message, data.is_user)
+                        },
+                        error: function(xhr, status, error) {
+                            var errorMessage = "An error occurred. please try again.";
+                            $('#error-message').text(errorMessage).show();
+                        },
+                        beforeSend: function(xhr) {
+                            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                            $('#loading-spinner').show();
+                        },
+                        complete: function() {
+                            $('#loading-spinner').hide(); 
+                            $('#error-message').delay(10000).fadeOut();
+                        }
+                    });
+                }
+                getMessageText = function () {
+                    var $message_input;
+                    $message_input = $('.message_input');
+                    return $message_input.val();
+                };
+                sendMessage = function (text, isUser) {
+                    var $messages, message;
+                    if (text.trim() === '') {
+                        return;
+                    }
+                    $('.message_input').val('');
+                    $messages = $('.messages');
+                    message = new Message({
+                        text: text,
+                        isUser: isUser
+                    });
+                    message.draw();
+                    setTimeout(function() {
+                        $messages.animate({ scrollTop: $messages.prop('scrollHeight') }, 300);
+                    }, 350);
+                };
+                $('.send_message').click(function (e) {
+                    sendAjax(getMessageText())
+                    sendMessage(getMessageText(), true)
+                });
+                $('.message_input').keyup(function (e) {
+                    if (e.which === 13) {
+                        sendAjax(getMessageText())
+                        sendMessage(getMessageText(), true)
+                    }
+                });
+                $(document).ready(function() {
+                    var $messages = $('.messages'); 
+                    $messages.scrollTop($messages.prop("scrollHeight")); 
+                });
+            });
+        }.call(this)); 
+    </script>
+</body>
+
+</html>
