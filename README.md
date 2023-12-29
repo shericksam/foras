@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://github.com/shericksam/foras/blob/main/foras.jpeg" alt="foras" width="200" height="270"/>
 </p>
-Welcome to Foras, a cutting-edge tool developed by Erick Guerrero to enrich the experience of querying Atlassian Confluence documentation. By leveraging the power of OpenAI's GPT-3, Foras provides users with an intuitive way to find information quickly and efficiently through natural language processing.
+Welcome to Foras, a cutting-edge tool developed to enrich the experience of querying Atlassian Confluence documentation. By leveraging the power of OpenAI's GPT-3, Foras provides users with an intuitive way to find information quickly and efficiently through natural language processing.
 
 ## Features
 
